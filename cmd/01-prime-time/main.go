@@ -8,8 +8,6 @@ import (
 	"protohackers/internal/tcp"
 )
 
-type PrimeTime struct{}
-
 type RequestDTO struct {
 	Method string   `json:"method"`
 	Number *float64 `json:"number"`
@@ -20,7 +18,7 @@ type ResponseDTO struct {
 	Prime  bool   `json:"prime"`
 }
 
-func (PrimeTime) Handle(conn net.Conn) {
+func handler(conn net.Conn) {
 	defer conn.Close()
 
 	log.Print("Received connection from: " + conn.RemoteAddr().String())
@@ -56,5 +54,5 @@ func isPrime(n int) bool {
 }
 
 func main() {
-	tcp.RunServer(PrimeTime{}, 9001)
+	tcp.RunTCPServer(handler, 9001)
 }

@@ -7,9 +7,7 @@ import (
 	"protohackers/internal/tcp"
 )
 
-type SmokeTest struct{}
-
-func (SmokeTest) Handle(conn net.Conn) {
+func handler(conn net.Conn) {
 	defer conn.Close()
 
 	if _, err := io.Copy(conn, conn); err != nil {
@@ -18,5 +16,5 @@ func (SmokeTest) Handle(conn net.Conn) {
 }
 
 func main() {
-	tcp.RunServer(SmokeTest{}, 9001)
+	tcp.RunTCPServer(handler, 9001)
 }
