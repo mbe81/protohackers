@@ -27,25 +27,8 @@ func int32ToByte(i int32) []byte {
 	return buffer.Bytes()
 }
 
-func processMessage(m []byte, prices map[int32]int32) int32 {
-	action := string(m[:1])
-	if action == "I" {
-		timestamp := byteToInt32(m[1:5])
-		price := byteToInt32(m[5:9])
-		return processInsert(timestamp, price, prices)
-	} else if action == "Q" {
-		minTime := byteToInt32(m[1:5])
-		maxTime := byteToInt32(m[5:9])
-		return processQuery(minTime, maxTime, prices)
-	} else {
-		return -1
-	}
-
-}
-
-func processInsert(timestamp int32, price int32, prices map[int32]int32) int32 {
+func processInsert(timestamp int32, price int32, prices map[int32]int32) {
 	prices[timestamp] = price
-	return -1
 }
 
 func processQuery(minTime int32, maxTime int32, prices map[int32]int32) int32 {
@@ -74,29 +57,46 @@ func processQuery(minTime int32, maxTime int32, prices map[int32]int32) int32 {
 	return int32(avgPrice)
 }
 
-func main() {
-	tcp.RunTCPServer(handler, 9001)
-}
-
 func handler(conn net.Conn) {
 	defer conn.Close()
 
 	log.Print("Received connection from: " + conn.RemoteAddr().String())
 
-	// Each session can only query the data supplied by itself so map is defined in handler
-	var prices = make(map[int32]int32)
-	buffer := make([]byte, 9)
+	// Each session can only query the data supplied by itself so the prices is defined in the connection handler
+	var (
+		prices = make(map[int32]int32)
+		buffer = make([]byte, 9)
+		result int32
+	)
 
 	for {
 		if _, err := io.ReadFull(conn, buffer); err != nil {
-			log.Print("Close connection from: " + conn.RemoteAddr().String())
-			conn.Close()
+			log.Print("Error reading data from: " + conn.RemoteAddr().String())
 			return
 		}
 
-		result := processMessage(buffer, prices)
+		action := string(buffer[:1])
+		result = -1
+
+		if action == "I" {
+			timestamp := byteToInt32(buffer[1:5])
+			price := byteToInt32(buffer[5:9])
+			processInsert(timestamp, price, prices)
+		} else if action == "Q" {
+			minTime := byteToInt32(buffer[1:5])
+			maxTime := byteToInt32(buffer[5:9])
+			result = processQuery(minTime, maxTime, prices)
+		}
+
 		if result != -1 {
-			conn.Write(int32ToByte(result))
+			if _, err := conn.Write(int32ToByte(result)); err != nil {
+				log.Print("Error writing data to: " + conn.RemoteAddr().String())
+				return
+			}
 		}
 	}
+}
+
+func main() {
+	tcp.RunTCPServer(handler, 9001)
 }
