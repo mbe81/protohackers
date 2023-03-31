@@ -8,7 +8,6 @@ import (
 )
 
 type Server struct {
-	listener    *net.TCPListener
 	connections map[string]Connection
 	ch          chan Message
 }
@@ -42,14 +41,14 @@ func (s *Server) runListener(port int) {
 		log.Fatal(err)
 	}
 
-	s.listener, err = net.ListenTCP("tcp", addr)
+	listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Accepting TCP connections on port %v", port)
 
 	for {
-		conn, err := s.listener.AcceptTCP()
+		conn, err := listener.AcceptTCP()
 		if err != nil {
 			log.Print(err)
 			continue
