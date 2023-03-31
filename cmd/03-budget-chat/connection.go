@@ -40,20 +40,7 @@ func NewConnection(conn net.Conn) (Connection, error) {
 }
 
 func (c *Connection) Run(ch chan Message) {
-	go c.StartReceiver()
-	c.StartSession(ch)
-}
-
-func (c *Connection) StartReceiver() {
-	for {
-		err := c.writeMessage(<-c.ch)
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (c *Connection) StartSession(ch chan Message) {
+	go c.startReceiver()
 	for {
 		msg, err := c.readLine()
 		if err != nil {
@@ -61,6 +48,15 @@ func (c *Connection) StartSession(ch chan Message) {
 		}
 
 		ch <- NewMessage(msg, c.UserName)
+	}
+}
+
+func (c *Connection) startReceiver() {
+	for {
+		err := c.writeMessage(<-c.ch)
+		if err != nil {
+			return
+		}
 	}
 }
 

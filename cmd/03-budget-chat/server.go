@@ -36,7 +36,7 @@ func (s *Server) runMessageDispatcher() {
 }
 
 func (s *Server) runListener(port int) {
-	
+
 	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("0.0.0.0:%v", port))
 	if err != nil {
 		log.Fatal(err)
@@ -63,37 +63,37 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 	log.Print("Received connection from: " + conn.RemoteAddr().String())
 
-	// initialize session
-	session, err := NewConnection(conn)
+	// initialize connection
+	connection, err := NewConnection(conn)
 	if err != nil {
 		return
 	}
-	s.connections[session.UserName] = session
+	s.connections[connection.UserName] = connection
 
 	// display online users
 	if len(s.connections) > 1 {
 		var users []string
 		for userName := range s.connections {
-			if userName != session.UserName {
+			if userName != connection.UserName {
 				users = append(users, userName)
 			}
 		}
-		err = session.writeLine("* Online users: " + strings.Join(users, ", "))
+		err = connection.writeLine("* Online users: " + strings.Join(users, ", "))
 	} else {
-		err = session.writeLine("* You are currently the only user online. 🎉")
+		err = connection.writeLine("* You are currently the only user online. 🎉")
 	}
 	if err != nil {
 		return
 	}
 
 	// broadcast new user
-	s.ch <- NewEvent(session.UserName+" has entered the room.", session.UserName)
+	s.ch <- NewEvent(connection.UserName+" has entered the room.", connection.UserName)
 
-	// start session
-	session.Run(s.ch)
+	// start connection
+	connection.Run(s.ch)
 
-	// session finished
-	s.ch <- NewEvent(session.UserName+" left the building.", session.UserName)
-	delete(s.connections, session.UserName)
+	// connection finished
+	s.ch <- NewEvent(connection.UserName+" left the building.", connection.UserName)
+	delete(s.connections, connection.UserName)
 
 }
