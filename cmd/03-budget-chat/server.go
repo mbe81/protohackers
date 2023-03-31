@@ -1,57 +1,79 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
-	"protohackers/internal/tcp"
 	"strings"
 )
 
 type Server struct {
-	sessions map[string]Session
-	channel  chan Message
+	listener    *net.TCPListener
+	connections map[string]Connection
+	ch          chan Message
 }
 
 func NewServer() Server {
-	return Server{sessions: make(map[string]Session), channel: make(chan Message)}
+	return Server{connections: make(map[string]Connection), ch: make(chan Message)}
 }
 
-func (s *Server) Run() {
-	go s.StartDispatcher()
-	s.StartListener()
+func (s *Server) Run(port int) {
+
+	go s.runMessageDispatcher()
+
+	s.runListener(port)
 }
 
-func (s *Server) StartDispatcher() {
+func (s *Server) runMessageDispatcher() {
 	for {
-		msg := <-s.channel
-		for _, s := range s.sessions {
+		msg := <-s.ch
+		for _, s := range s.connections {
 			if msg.UserName != s.UserName {
-				s.channel <- msg
+				s.ch <- msg
 			}
 		}
 	}
 }
 
-func (s *Server) StartListener() {
-	tcp.RunTCPServer(s.SessionHandler, 9001)
+func (s *Server) runListener(port int) {
+	
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("0.0.0.0:%v", port))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s.listener, err = net.ListenTCP("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Accepting TCP connections on port %v", port)
+
+	for {
+		conn, err := s.listener.AcceptTCP()
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+		go s.handleConnection(conn)
+	}
 }
 
-func (s *Server) SessionHandler(conn net.Conn) {
+func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	log.Print("Received connection from: " + conn.RemoteAddr().String())
 
 	// initialize session
-	session, err := NewSession(conn)
+	session, err := NewConnection(conn)
 	if err != nil {
 		return
 	}
-	s.sessions[session.UserName] = session
+	s.connections[session.UserName] = session
 
 	// display online users
-	if len(s.sessions) > 1 {
+	if len(s.connections) > 1 {
 		var users []string
-		for userName := range s.sessions {
+		for userName := range s.connections {
 			if userName != session.UserName {
 				users = append(users, userName)
 			}
@@ -65,13 +87,13 @@ func (s *Server) SessionHandler(conn net.Conn) {
 	}
 
 	// broadcast new user
-	s.channel <- NewEvent(session.UserName+" has entered the room.", session.UserName)
+	s.ch <- NewEvent(session.UserName+" has entered the room.", session.UserName)
 
 	// start session
-	session.Run(s.channel)
+	session.Run(s.ch)
 
 	// session finished
-	s.channel <- NewEvent(session.UserName+" left the building.", session.UserName)
-	delete(s.sessions, session.UserName)
+	s.ch <- NewEvent(session.UserName+" left the building.", session.UserName)
+	delete(s.connections, session.UserName)
 
 }

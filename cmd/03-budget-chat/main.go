@@ -2,5 +2,5 @@ package main
 
 func main() {
 	server := NewServer()
-	server.Run()
+	server.Run(9001)
 }

@@ -1,14 +1,21 @@
-package tcp
+package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 )
 
-type Handler func(net.Conn)
+type Server struct {
+}
 
-func RunTCPServer(handler Handler, port int) {
+func NewServer() Server {
+	var s Server
+	return s
+}
+
+func (s *Server) Run(port int) {
 
 	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("0.0.0.0:%v", port))
 	if err != nil {
@@ -27,6 +34,14 @@ func RunTCPServer(handler Handler, port int) {
 			log.Print(err)
 			continue
 		}
-		go handler(conn)
+		go s.handleConnection(conn)
+	}
+}
+
+func (s *Server) handleConnection(conn net.Conn) {
+	defer conn.Close()
+
+	if _, err := io.Copy(conn, conn); err != nil {
+		log.Println(err)
 	}
 }
