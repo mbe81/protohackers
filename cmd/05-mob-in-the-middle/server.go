@@ -107,6 +107,7 @@ func (s *Server) writeLine(conn net.Conn, line string) error {
 }
 
 func (s *Server) readLine(conn net.Conn) (string, error) {
+	// Switched to reader because scanner will return the last non-empty line of input if it has no newline
 	reader := bufio.NewReader(conn)
 	line, err := reader.ReadString('\n')
 	return strings.TrimSpace(string(line)), err
