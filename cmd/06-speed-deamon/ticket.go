@@ -19,9 +19,6 @@ func WriteTicketMessage(w io.Writer, msg TicketMessage) error {
 	if err := WriteString(w, msg.plate); err != nil {
 		return err
 	}
-	if err := WriteString(w, msg.plate); err != nil {
-		return err
-	}
 	if err := WriteUint16(w, msg.road); err != nil {
 		return err
 	}
