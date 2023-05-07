@@ -1,23 +1,13 @@
 package main
 
-import (
-	"io"
-)
-
-type PlateMessage struct {
+type PlateHistory struct {
+	events  []Event
+	tickets []Ticket
+}
+type Event struct {
+	road      uint16
+	mile      uint16
+	limit     uint16
 	plate     string
 	timestamp uint32
-}
-
-func ReadPlateMessage(r io.Reader) (PlateMessage, error) {
-	var err error
-
-	msg := PlateMessage{}
-	if msg.plate, err = ReadString(r); err != nil {
-		return msg, err
-	}
-	if msg.timestamp, err = ReadUInt32(r); err != nil {
-		return msg, err
-	}
-	return msg, err
 }

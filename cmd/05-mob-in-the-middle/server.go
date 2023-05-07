@@ -77,7 +77,7 @@ func (s *Server) startProxy(connFrom net.Conn, connTo net.Conn) {
 			return
 		}
 
-		line = s.rewriteBoguscoinAddress(line)
+		line = s.rewriteBogusCoinAddress(line)
 
 		s.writeLine(connTo, line)
 		if err != nil {
@@ -86,7 +86,7 @@ func (s *Server) startProxy(connFrom net.Conn, connTo net.Conn) {
 	}
 }
 
-func (s *Server) rewriteBoguscoinAddress(line string) string {
+func (s *Server) rewriteBogusCoinAddress(line string) string {
 	words := strings.Split(line, " ")
 	if len(words) > 0 {
 		for index, word := range words {
